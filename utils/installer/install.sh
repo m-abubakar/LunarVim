@@ -46,10 +46,6 @@ if ! command -v tree-sitter &>/dev/null; then
   __npm_deps+=("tree-sitter-cli")
 fi
 
-declare -a __pip_deps=(
-  "pynvim"
-)
-
 declare -a __rust_deps=(
   "fd::fd-find"
   "rg::ripgrep"
@@ -135,18 +131,14 @@ function main() {
 
   if [ "$ARGS_INSTALL_DEPENDENCIES" -eq 1 ]; then
     if [ "$INTERACTIVE_MODE" -eq 1 ]; then
-      if confirm "Would you like to install LunarVim's NodeJS dependencies: $(stringify_array "${__npm_deps[@]}")?"; then
+      if confirm "Would you like to install LunarVim's NodeJS/BunJS dependencies: $(stringify_array "${__npm_deps[@]}")?"; then
         install_nodejs_deps
-      fi
-      if confirm "Would you like to install LunarVim's Python dependencies: $(stringify_array "${__pip_deps[@]}")?"; then
-        install_python_deps
       fi
       if confirm "Would you like to install LunarVim's Rust dependencies: $(stringify_array "${__rust_deps[@]}")?"; then
         install_rust_deps
       fi
     else
       install_nodejs_deps
-      install_python_deps
       install_rust_deps
     fi
   fi
@@ -286,6 +278,12 @@ function __install_nodejs_deps_yarn() {
   echo "All NodeJS dependencies are successfully installed"
 }
 
+function __install_nodejs_deps_bun() {
+  echo "Installing bun modules with bun..."
+  bun install -g "${__npm_deps[@]}"
+  echo "All BunJS dependencies are successfully installed"
+}
+
 function __validate_node_installation() {
   local pkg_manager="$1"
   local manager_home
@@ -296,6 +294,8 @@ function __validate_node_installation() {
 
   if [ "$pkg_manager" == "npm" ]; then
     manager_home="$(npm config get prefix 2>/dev/null)"
+  elif [ "$pkg_manager" == "bun" ]; then
+    manager_home="$BUN_INSTALL"
   elif [ "$pkg_manager" == "pnpm" ]; then
     manager_home="$(pnpm config get prefix 2>/dev/null)"
   else
@@ -310,7 +310,7 @@ function __validate_node_installation() {
 }
 
 function install_nodejs_deps() {
-  local -a pkg_managers=("pnpm" "yarn" "npm")
+  local -a pkg_managers=("pnpm" "bun" "yarn" "npm")
   for pkg_manager in "${pkg_managers[@]}"; do
     if __validate_node_installation "$pkg_manager"; then
       eval "__install_nodejs_deps_$pkg_manager"
@@ -319,21 +319,6 @@ function install_nodejs_deps() {
   done
   echo "[WARN]: skipping installing optional nodejs dependencies due to insufficient permissions."
   echo "check how to solve it: https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally"
-}
-
-function install_python_deps() {
-  echo "Verifying that pip is available.."
-  if ! python3 -m ensurepip >/dev/null; then
-    if ! python3 -m pip --version &>/dev/null; then
-      echo "[WARN]: skipping installing optional python dependencies"
-      return 1
-    fi
-  fi
-  echo "Installing with pip.."
-  for dep in "${__pip_deps[@]}"; do
-    python3 -m pip install --user "$dep" || return 1
-  done
-  echo "All Python dependencies are successfully installed"
 }
 
 function __attempt_to_install_with_cargo() {
@@ -439,7 +424,7 @@ function setup_lvim() {
 
   "$INSTALL_PREFIX/bin/$NVIM_APPNAME" --headless -c 'quitall'
 
-  printf "\nLazy setup complete"
+  printf "\nLazy setup complete\n"
 
   verify_core_plugins
 }

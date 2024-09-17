@@ -21,7 +21,7 @@ local core_plugins = {
     dependencies = "mason.nvim",
   },
   { "tamago324/nlsp-settings.nvim", cmd = "LspSettings", lazy = true },
-  { "jose-elias-alvarez/null-ls.nvim", lazy = true },
+  { "nvimtools/none-ls.nvim", lazy = true },
   {
     "williamboman/mason.nvim",
     config = function()
@@ -154,7 +154,7 @@ local core_plugins = {
 
   -- NvimTree
   {
-    "kyazdani42/nvim-tree.lua",
+    "nvim-tree/nvim-tree.lua",
     config = function()
       require("lvim.core.nvimtree").setup()
     end,
@@ -351,10 +351,11 @@ local core_plugins = {
     "lunarvim/bigfile.nvim",
     config = function()
       pcall(function()
-        require("bigfile").config(lvim.builtin.bigfile.config)
+        require("bigfile").setup(lvim.builtin.bigfile.config)
       end)
     end,
     enabled = lvim.builtin.bigfile.active,
+    dependencies = { "nvim-treesitter/nvim-treesitter" },
     event = { "FileReadPre", "BufReadPre", "User FileOpened" },
   },
 }
